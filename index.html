@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiMajalah - Pencatatan Media Perpustakaan</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F8F9FA; color: #343A40; }
+
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1D3557 0%, #2D6A4F 100%); padding: 20px;
+  }
+  .login-box { background: white; border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  .logo-placeholder {
+    width: 72px; height: 72px; border-radius: 14px; border: 2px dashed #ADB5BD; background: #F8F9FA;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 11px; color: #ADB5BD; text-align: center; line-height: 1.3;
+  }
+  .login-box h1 { text-align: center; font-size: 18px; color: #1D3557; margin-bottom: 4px; }
+  .login-box p.subtitle { text-align: center; font-size: 12px; color: #6C757D; margin-bottom: 24px; }
+  #loginError { background: #FFF1F1; color: #E63946; font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 14px; display: none; }
+
+  /* ===== APP ===== */
+  #appScreen { display: none; }
+  .header { background: linear-gradient(135deg, #1D3557 0%, #2D6A4F 100%); color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-logo {
+    width: 38px; height: 38px; border-radius: 8px; border: 1.5px dashed rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; background: rgba(255,255,255,0.08); text-align: center; line-height: 1.1;
+  }
+  .header h1 { font-size: 16px; line-height: 1.2; }
+  .header p { font-size: 10px; opacity: 0.8; }
+  .logout-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+  .tabs { display: flex; background: white; border-bottom: 2px solid #E9ECEF; }
+  .tab { flex: 1; border: none; background: none; padding: 12px 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: #6C757D; border-bottom: 2px solid transparent; }
+  .tab.active { color: #1D3557; border-bottom-color: #1D3557; }
+  .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .summary-box { background: white; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .summary-box .val { font-size: 22px; font-weight: 800; }
+  .summary-box .label { font-size: 11px; color: #6C757D; margin-top: 2px; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  select, input, textarea, button { font-family: inherit; font-size: 13px; }
+  select, input[type=text], input[type=number], input[type=date], input[type=password], textarea {
+    width: 100%; padding: 8px 10px; border: 1.5px solid #DEE2E6; border-radius: 8px; margin-top: 4px;
+  }
+  label { font-size: 12px; font-weight: 600; color: #495057; }
+  .field { margin-bottom: 12px; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; }
+  .btn-primary { background: #1D3557; color: white; }
+  .btn-outline { background: white; border: 1.5px solid #1D3557; color: #1D3557; }
+  .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; display: inline-block; }
+  .status-lunas { background: #52B788; }
+  .status-belum { background: #E63946; }
+  .status-proses { background: #FFB703; }
+  .media-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #F1F3F4; }
+  .media-item:last-child { border-bottom: none; }
+  .receipt-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #DEE2E6; }
+  .status-select-pending { background: #DEE2E6; }
+  .status-select-diterima { background: #52B788; color: white; }
+  .status-select-terlambat { background: #FFB703; }
+  .status-select-hilang { background: #E63946; color: white; }
+  .empty { text-align: center; color: #ADB5BD; padding: 30px 0; font-size: 13px; }
+  .loading { text-align: center; color: #6C757D; padding: 20px; }
+
+  .grup-judul { font-weight: 700; font-size: 13px; color: #1D3557; margin-bottom: 10px; }
+  .media-row { padding: 12px 0; border-bottom: 1px solid #F1F3F4; }
+  .media-row:last-child { border-bottom: none; }
+  .media-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .media-row-nama { font-weight: 600; font-size: 13px; }
+  .status-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-pill {
+    padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid #DEE2E6; background: white; color: #6C757D;
+  }
+  .status-pill.active-diterima { background: #52B788; border-color: #52B788; color: white; }
+  .status-pill.active-terlambat { background: #FFB703; border-color: #FFB703; color: white; }
+  .status-pill.active-hilang { background: #E63946; border-color: #E63946; color: white; }
+  .status-pill.active-tidak_terbit { background: #ADB5BD; border-color: #ADB5BD; color: white; }
+  .catatan-input {
+    width: 100%; padding: 6px 10px; border: 1.5px solid #DEE2E6; border-radius: 8px; margin-top: 8px;
+    font-size: 12px; display: none;
+  }
+  .catatan-input.shown { display: block; }
+
+  .drive-status-box {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: #FFF8E6; border: 1px solid #FFE5A3; border-radius: 8px;
+    padding: 8px 10px; margin-top: 4px; margin-bottom: 8px; font-size: 11px; color: #856404;
+  }
+  .drive-status-box.connected { background: #E8F5EE; border-color: #B7E4CC; color: #2D6A4F; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1D3557; color: white; padding: 10px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 999; }
+</style>
+</head>
+<body>
+
+<!-- ============ LAYAR LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <!-- PLACEHOLDER LOGO INSTANSI: ganti div ini dengan <img src="logo-instansi.png" style="width:72px;height:72px;border-radius:14px;object-fit:contain;margin:0 auto 14px;display:block"> -->
+    <div class="logo-placeholder" id="loginLogoPlaceholder">LOGO<br>INSTANSI</div>
+    <h1>SiMajalah</h1>
+    <p class="subtitle">Pencatatan Media & Tagihan Perpustakaan</p>
+    <div id="loginError">Username atau password salah</div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="Masukkan username" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Masukkan password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%">Masuk</button>
+  </div>
+</div>
+
+<!-- ============ LAYAR APLIKASI ============ -->
+<div id="appScreen">
+
+  <div class="header">
+    <div class="header-left">
+      <!-- PLACEHOLDER LOGO INSTANSI: ganti div ini dengan <img src="logo-instansi.png" style="width:38px;height:38px;border-radius:8px;object-fit:contain"> -->
+      <div class="header-logo" id="headerLogoPlaceholder">LOGO</div>
+      <div>
+        <h1>SiMajalah</h1>
+        <p>Pencatatan Media & Tagihan Perpustakaan</p>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Keluar</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="ceklist" id="tabCeklistBtn">✅ Ceklist</button>
+    <button class="tab" data-tab="tagihan" id="tabTagihanBtn">💰 Tagihan</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ===== TAB CEKLIST ===== -->
+    <div id="tab-ceklist">
+      <div class="card">
+        <label>Pilih Tanggal</label>
+        <input type="date" id="ceklistTanggal">
+      </div>
+
+      <div class="card" id="grupKoran">
+        <div class="grup-judul">📰 Koran Harian</div>
+        <div id="listKoran"></div>
+      </div>
+
+      <div class="card" id="grupTabloid">
+        <div class="grup-judul">📅 Tabloid Mingguan</div>
+        <div id="listTabloid"></div>
+      </div>
+
+      <div class="card" id="grupMajalah">
+        <div class="grup-judul">📖 Majalah Bulanan</div>
+        <div id="listMajalah"></div>
+      </div>
+
+      <button class="btn btn-primary" id="simpanCeklistBtn" style="width:100%;margin-bottom:12px">Simpan Semua Ceklist</button>
+
+      <div class="card">
+        <strong>Riwayat Tanggal Ini</strong>
+        <div id="ceklistList" style="margin-top:10px"><div class="loading">Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB TAGIHAN ===== -->
+    <div id="tab-tagihan" style="display:none">
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="val" id="totalTagihan" style="color:#1D3557">Rp 0</div>
+          <div class="label">Total Tagihan Keseluruhan</div>
+        </div>
+        <div class="summary-box">
+          <div class="val" id="totalBelumLunas" style="color:#E63946">Rp 0</div>
+          <div class="label">Belum Lunas</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Tambah Tagihan Baru</strong>
+        <p style="font-size:11px;color:#6C757D;margin-top:4px">Tagihan mencakup seluruh media (1 agen langganan)</p>
+        <div class="field" style="margin-top:10px">
+          <label>Nama Agen</label>
+          <input type="text" id="tagihanAgen" placeholder="Contoh: Agen Koran Sejahtera">
+        </div>
+        <div class="field">
+          <label>Periode Tagihan</label>
+          <input type="text" id="tagihanPeriode" placeholder="Contoh: Juni 2026">
+        </div>
+        <div class="field">
+          <label>Jumlah Tagihan (Rp)</label>
+          <input type="number" id="tagihanJumlah" placeholder="Contoh: 850000">
+        </div>
+        <div class="field">
+          <label>Status Pembayaran</label>
+          <select id="tagihanStatus">
+            <option value="belum">Belum Lunas</option>
+            <option value="proses">Proses Pembayaran</option>
+            <option value="lunas">Lunas</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Upload Kuitansi (opsional)</label>
+          <div id="driveStatusBox" class="drive-status-box">
+            <span id="driveStatusText">🔌 Belum terhubung ke Google Drive</span>
+            <button type="button" class="btn btn-outline" id="driveConnectBtn" style="padding:4px 10px;font-size:11px">Hubungkan Drive</button>
+          </div>
+          <input type="file" id="tagihanKuitansi" accept="image/*,.pdf">
+        </div>
+        <button class="btn btn-primary" id="simpanTagihanBtn" style="width:100%">Simpan Tagihan</button>
+      </div>
+
+      <div class="card">
+        <strong>Daftar Tagihan</strong>
+        <div id="tagihanList" style="margin-top:10px"><div class="loading">Memuat...</div></div>
+      </div>
+
+      <div class="card">
+        <strong>📥 Unduh Rekap Ceklist Bulanan</strong>
+        <p style="font-size:11px;color:#6C757D;margin-top:4px">Rekap status penerimaan semua media per bulan</p>
+        <div class="field" style="margin-top:10px">
+          <label>Pilih Bulan</label>
+          <input type="month" id="rekapBulan">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-outline" id="unduhCsvBtn" style="flex:1">⬇ Unduh CSV</button>
+          <button class="btn btn-outline" id="unduhPdfBtn" style="flex:1">⬇ Unduh PDF</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ============ FIREBASE SDK ============ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ====================================================================
+// GANTI KONFIGURASI DI BAWAH INI DENGAN MILIK PROJECT FIREBASE ANDA
+// Dapatkan dari: Firebase Console > Project Settings > Your apps > SDK setup
+// ====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDjJkDJBSvRNROY4ALXAAyicTD0qwv_FKI",
+  authDomain: "koran-majalah.firebaseapp.com",
+  projectId: "koran-majalah",
+  storageBucket: "koran-majalah.firebasestorage.app",
+  messagingSenderId: "669359719325",
+  appId: "1:669359719325:web:211e9d9582c42a3ec56574"
+};
+// ====================================================================
+
+// ====================================================================
+// GOOGLE DRIVE — untuk upload file kuitansi ke 1 folder Drive bersama
+// 1. Buka https://console.cloud.google.com/apis/credentials
+// 2. Buat "OAuth Client ID" jenis "Web application"
+// 3. Tambahkan domain tempat aplikasi ini di-hosting ke "Authorized JavaScript origins"
+// 4. Aktifkan "Google Drive API" di library API project yang sama
+// 5. Buat folder di Drive, klik kanan > Bagikan > catat ID folder dari URL-nya
+//    (URL: https://drive.google.com/drive/folders/INI_ID_FOLDERNYA)
+// ====================================================================
+const GOOGLE_CLIENT_ID = "GANTI_DENGAN_GOOGLE_CLIENT_ID_ANDA.apps.googleusercontent.com";
+const GOOGLE_DRIVE_FOLDER_ID = "GANTI_DENGAN_ID_FOLDER_DRIVE_BERSAMA";
+// ====================================================================
+
+// ====================================================================
+// LOGIN SEDERHANA (tanpa Firebase Auth) — GANTI username/password di sini
+// CATATAN KEAMANAN: kredensial ini terlihat di kode sumber halaman (view-source).
+// Cocok untuk pemakaian internal/terbatas, BUKAN untuk data sensitif publik.
+// ====================================================================
+const LOGIN_USERNAME = "admin";
+const LOGIN_PASSWORD = "perpustakaan123";
+// ====================================================================
+
+// Inisialisasi Firebase dibungkus try-catch supaya jika config belum diisi
+// dengan benar, fitur LOGIN tetap berfungsi (hanya fitur simpan/baca data
+// yang akan menampilkan pesan error yang jelas, bukan membuat tombol mati total).
+let app, db, firebaseError = null;
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch (err) {
+  firebaseError = err;
+  console.error("Firebase gagal diinisialisasi. Pastikan firebaseConfig sudah diisi dengan benar.", err);
+}
+
+function pastikanFirebaseSiap() {
+  if (firebaseError || firebaseConfig.apiKey === "GANTI_DENGAN_API_KEY_ANDA") {
+    showToast("⚠️ Firebase belum dikonfigurasi. Isi firebaseConfig di kode terlebih dahulu.");
+    return false;
+  }
+  return true;
+}
+
+// ---------- GOOGLE DRIVE ----------
+let driveAccessToken = null;
+let driveTokenClient = null;
+
+function initDriveTokenClient() {
+  if (typeof google === "undefined" || !google.accounts) {
+    console.warn("Google Identity Services belum dimuat.");
+    return;
+  }
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/drive.file",
+    callback: (response) => {
+      if (response.error) {
+        showToast("Gagal terhubung ke Google Drive: " + response.error);
+        return;
+      }
+      driveAccessToken = response.access_token;
+      updateDriveStatusUI(true);
+      showToast("Google Drive berhasil terhubung ✓");
+    }
+  });
+}
+
+function updateDriveStatusUI(connected) {
+  const box = document.getElementById("driveStatusBox");
+  const text = document.getElementById("driveStatusText");
+  const btn = document.getElementById("driveConnectBtn");
+  if (!box) return;
+  if (connected) {
+    box.classList.add("connected");
+    text.textContent = "✓ Terhubung ke Google Drive";
+    btn.textContent = "Sambung Ulang";
+  } else {
+    box.classList.remove("connected");
+    text.textContent = "🔌 Belum terhubung ke Google Drive";
+    btn.textContent = "Hubungkan Drive";
+  }
+}
+
+document.getElementById("driveConnectBtn")?.addEventListener("click", () => {
+  if (GOOGLE_CLIENT_ID.includes("GANTI_DENGAN")) {
+    showToast("⚠️ Google Client ID belum dikonfigurasi di kode.");
+    return;
+  }
+  if (!driveTokenClient) initDriveTokenClient();
+  driveTokenClient?.requestAccessToken();
+});
+
+async function uploadFileToDrive(file) {
+  if (GOOGLE_DRIVE_FOLDER_ID.includes("GANTI_DENGAN")) {
+    throw new Error("ID folder Google Drive belum dikonfigurasi di kode.");
+  }
+
+  const metadata = {
+    name: `kuitansi_${Date.now()}_${file.name}`,
+    parents: [GOOGLE_DRIVE_FOLDER_ID]
+  };
+
+  const form = new FormData();
+  form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+  form.append("file", file);
+
+  const uploadRes = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${driveAccessToken}` },
+      body: form
+    }
+  );
+
+  if (!uploadRes.ok) {
+    const errBody = await uploadRes.text();
+    throw new Error("Upload Drive gagal: " + errBody);
+  }
+
+  const uploaded = await uploadRes.json();
+  const fileId = uploaded.id;
+
+  // Set permission agar file bisa diakses lewat link (siapa pun yang punya link)
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${driveAccessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ role: "reader", type: "anyone" })
+  });
+
+  return `https://drive.google.com/file/d/${fileId}/view`;
+}
+
+
+const MEDIA_CATALOG = [
+  { id: "kompas", nama: "Kompas", jenis: "koran" },
+  { id: "republika", nama: "Republika", jenis: "koran" },
+  { id: "jakartapost", nama: "Jakarta Post", jenis: "koran" },
+  { id: "otomotif", nama: "Tabloid Otomotif", jenis: "tabloid" },
+  { id: "trubus", nama: "Trubus", jenis: "majalah" },
+  { id: "natgeo", nama: "National Geographic", jenis: "majalah" },
+];
+
+const MEDIA_NAMA = Object.fromEntries(MEDIA_CATALOG.map(m => [m.id, m.nama]));
+
+const STATUS_OPTIONS = [
+  { value: "diterima", label: "✓ Diterima" },
+  { value: "terlambat", label: "⏱ Terlambat" },
+  { value: "hilang", label: "! Hilang" },
+  { value: "tidak_terbit", label: "— Tidak Terbit" },
+];
+
+const STATUS_LABEL = {
+  diterima: ["✓ Diterima", "status-select-diterima"],
+  terlambat: ["⏱ Terlambat", "status-select-terlambat"],
+  hilang: ["! Hilang", "status-select-hilang"],
+  tidak_terbit: ["— Tidak Terbit", "status-select-pending"]
+};
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2200);
+}
+
+function formatRupiah(angka) {
+  return "Rp " + Number(angka || 0).toLocaleString("id-ID");
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+// ---------- LOGIN LOGIC ----------
+const SESSION_KEY = "simajalah_logged_in";
+
+function checkSession() {
+  if (sessionStorage.getItem(SESSION_KEY) === "true") {
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("appScreen").style.display = "none";
+}
+
+function showApp() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appScreen").style.display = "block";
+  document.getElementById("ceklistTanggal").valueAsDate = new Date();
+  renderGrupCeklist();
+  loadCeklist();
+  setTimeout(initDriveTokenClient, 300); // beri waktu skrip GIS dari Google selesai dimuat
+}
+
+document.getElementById("loginBtn").addEventListener("click", () => {
+  const u = document.getElementById("loginUsername").value.trim();
+  const p = document.getElementById("loginPassword").value;
+  const errEl = document.getElementById("loginError");
+
+  if (u === LOGIN_USERNAME && p === LOGIN_PASSWORD) {
+    sessionStorage.setItem(SESSION_KEY, "true");
+    errEl.style.display = "none";
+    showApp();
+  } else {
+    errEl.style.display = "block";
+  }
+});
+
+document.getElementById("loginPassword").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("loginBtn").click();
+});
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById("loginUsername").value = "";
+  document.getElementById("loginPassword").value = "";
+  showLogin();
+});
+
+// ---------- TAB SWITCH ----------
+function switchTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add("active");
+  document.getElementById("tab-ceklist").style.display = tab === "ceklist" ? "block" : "none";
+  document.getElementById("tab-tagihan").style.display = tab === "tagihan" ? "block" : "none";
+  if (tab === "ceklist") { renderGrupCeklist(); loadCeklist(); }
+  if (tab === "tagihan") loadTagihan();
+}
+
+document.getElementById("tabCeklistBtn").addEventListener("click", () => switchTab("ceklist"));
+document.getElementById("tabTagihanBtn").addEventListener("click", () => switchTab("tagihan"));
+
+// ---------- CEKLIST (per tanggal, multi-media) ----------
+document.getElementById("ceklistTanggal").addEventListener("change", () => {
+  renderGrupCeklist();
+  loadCeklist();
+});
+document.getElementById("simpanCeklistBtn").addEventListener("click", simpanCeklist);
+
+// State sementara untuk pilihan status per media (sebelum disimpan)
+const pilihanCeklist = {}; // { mediaId: { status, catatan } }
+
+function renderGrupCeklist() {
+  const grupTarget = {
+    koran: document.getElementById("listKoran"),
+    tabloid: document.getElementById("listTabloid"),
+    majalah: document.getElementById("listMajalah"),
+  };
+
+  // Reset target containers
+  Object.values(grupTarget).forEach(el => el.innerHTML = "");
+
+  MEDIA_CATALOG.forEach(media => {
+    if (!pilihanCeklist[media.id]) {
+      pilihanCeklist[media.id] = { status: null, catatan: "" };
+    }
+    const sel = pilihanCeklist[media.id];
+
+    const row = document.createElement("div");
+    row.className = "media-row";
+    row.innerHTML = `
+      <div class="media-row-top">
+        <span class="media-row-nama">${media.nama}</span>
+      </div>
+      <div class="status-pills" data-media="${media.id}">
+        ${STATUS_OPTIONS.map(s => `
+          <button type="button" class="status-pill ${sel.status === s.value ? 'active-' + s.value : ''}" data-status="${s.value}">${s.label}</button>
+        `).join("")}
+        <button type="button" class="status-pill catatan-toggle" data-media="${media.id}">📝</button>
+      </div>
+      <textarea class="catatan-input" data-media="${media.id}" rows="2" placeholder="Catatan (opsional)">${sel.catatan || ""}</textarea>
+    `;
+    grupTarget[media.jenis].appendChild(row);
+  });
+
+  // Pasang event listener untuk pill status
+  document.querySelectorAll(".status-pill[data-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mediaId = btn.closest(".status-pills").dataset.media;
+      const status = btn.dataset.status;
+      pilihanCeklist[mediaId].status = pilihanCeklist[mediaId].status === status ? null : status;
+      renderGrupCeklist();
+    });
+  });
+
+  // Pasang event listener untuk toggle catatan
+  document.querySelectorAll(".catatan-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mediaId = btn.dataset.media;
+      const textarea = document.querySelector(`.catatan-input[data-media="${mediaId}"]`);
+      textarea.classList.toggle("shown");
+      if (textarea.classList.contains("shown")) textarea.focus();
+    });
+  });
+
+  // Simpan input catatan ke state saat user mengetik
+  document.querySelectorAll(".catatan-input").forEach(ta => {
+    ta.addEventListener("input", () => {
+      pilihanCeklist[ta.dataset.media].catatan = ta.value;
+    });
+  });
+}
+
+async function simpanCeklist() {
+  if (!pastikanFirebaseSiap()) return;
+  const tanggal = document.getElementById("ceklistTanggal").value;
+  if (!tanggal) { showToast("Pilih tanggal dulu"); return; }
+
+  const mediaTerisi = Object.entries(pilihanCeklist).filter(([id, v]) => v.status);
+  if (mediaTerisi.length === 0) { showToast("Pilih status minimal satu media"); return; }
+
+  try {
+    for (const [mediaId, v] of mediaTerisi) {
+      await addDoc(collection(db, "ceklist"), {
+        mediaId,
+        mediaNama: MEDIA_NAMA[mediaId],
+        tanggal,
+        status: v.status,
+        catatan: v.catatan || "",
+        dibuatPada: serverTimestamp()
+      });
+    }
+    // Reset state setelah simpan
+    Object.keys(pilihanCeklist).forEach(id => { pilihanCeklist[id] = { status: null, catatan: "" }; });
+    renderGrupCeklist();
+    showToast(`${mediaTerisi.length} ceklist disimpan ✓`);
+    loadCeklist();
+  } catch (err) {
+    console.error(err);
+    showToast("Gagal menyimpan: " + err.message);
+  }
+}
+
+async function loadCeklist() {
+  if (!pastikanFirebaseSiap()) {
+    document.getElementById("ceklistList").innerHTML = '<div class="empty">Firebase belum dikonfigurasi</div>';
+    return;
+  }
+  const tanggal = document.getElementById("ceklistTanggal").value;
+  const listEl = document.getElementById("ceklistList");
+  listEl.innerHTML = '<div class="loading">Memuat...</div>';
+
+  try {
+    const q = query(collection(db, "ceklist"), orderBy("dibuatPada", "desc"));
+    const snap = await getDocs(q);
+    const items = snap.docs
+      .map(d => d.data())
+      .filter(item => item.tanggal === tanggal);
+
+    if (items.length === 0) {
+      listEl.innerHTML = '<div class="empty">Belum ada catatan untuk tanggal ini</div>';
+      return;
+    }
+
+    listEl.innerHTML = items.map(item => {
+      const [label, cls] = STATUS_LABEL[item.status] || ["?", ""];
+      return `
+        <div class="media-item">
+          <div>
+            <div style="font-weight:600;font-size:13px">${item.mediaNama}</div>
+            ${item.catatan ? `<div style="font-size:11px;color:#6C757D">📝 ${escapeHtml(item.catatan)}</div>` : ""}
+          </div>
+          <span class="status-badge ${cls}">${label}</span>
+        </div>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<div class="empty">Gagal memuat data: ' + err.message + '</div>';
+  }
+}
+
+
+// ---------- TAGIHAN (konsolidasi, 1 agen mencakup semua media) ----------
+document.getElementById("simpanTagihanBtn").addEventListener("click", simpanTagihan);
+
+async function simpanTagihan() {
+  if (!pastikanFirebaseSiap()) return;
+  const agen = document.getElementById("tagihanAgen").value.trim();
+  const periode = document.getElementById("tagihanPeriode").value.trim();
+  const jumlah = Number(document.getElementById("tagihanJumlah").value);
+  const status = document.getElementById("tagihanStatus").value;
+  const fileInput = document.getElementById("tagihanKuitansi");
+
+  if (!periode || !jumlah) { showToast("Lengkapi periode dan jumlah tagihan"); return; }
+
+  // Jika ada file dipilih tapi belum login Drive, minta login dulu
+  if (fileInput.files.length > 0 && !driveAccessToken) {
+    showToast("Hubungkan Google Drive dulu sebelum upload kuitansi");
+    return;
+  }
+
+  showToast("Menyimpan...");
+
+  try {
+    let kuitansiUrl = "";
+
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      showToast("Mengupload kuitansi ke Google Drive...");
+      kuitansiUrl = await uploadFileToDrive(file);
+    }
+
+    await addDoc(collection(db, "tagihan"), {
+      agen: agen || "-",
+      periode,
+      jumlah,
+      status,
+      kuitansiUrl,
+      dibuatPada: serverTimestamp()
+    });
+
+    document.getElementById("tagihanAgen").value = "";
+    document.getElementById("tagihanPeriode").value = "";
+    document.getElementById("tagihanJumlah").value = "";
+    fileInput.value = "";
+    showToast("Tagihan disimpan ✓");
+    loadTagihan();
+  } catch (err) {
+    console.error(err);
+    showToast("Gagal menyimpan: " + err.message);
+  }
+}
+
+async function loadTagihan() {
+  if (!pastikanFirebaseSiap()) {
+    document.getElementById("tagihanList").innerHTML = '<div class="empty">Firebase belum dikonfigurasi</div>';
+    return;
+  }
+  const listEl = document.getElementById("tagihanList");
+  listEl.innerHTML = '<div class="loading">Memuat...</div>';
+
+  try {
+    const q = query(collection(db, "tagihan"), orderBy("dibuatPada", "desc"));
+    const snap = await getDocs(q);
+    const items = snap.docs.map(d => d.data());
+
+    const totalSemua = items.reduce((sum, i) => sum + (Number(i.jumlah) || 0), 0);
+    const totalBelumLunas = items
+      .filter(i => i.status !== "lunas")
+      .reduce((sum, i) => sum + (Number(i.jumlah) || 0), 0);
+
+    document.getElementById("totalTagihan").textContent = formatRupiah(totalSemua);
+    document.getElementById("totalBelumLunas").textContent = formatRupiah(totalBelumLunas);
+
+    if (items.length === 0) {
+      listEl.innerHTML = '<div class="empty">Belum ada tagihan tercatat</div>';
+      return;
+    }
+
+    const statusBadge = {
+      lunas: ["Lunas", "status-lunas"],
+      belum: ["Belum Lunas", "status-belum"],
+      proses: ["Proses", "status-proses"]
+    };
+
+    listEl.innerHTML = items.map(item => {
+      const [label, cls] = statusBadge[item.status] || ["?", ""];
+      return `
+        <div class="media-item">
+          <div style="display:flex;align-items:center;gap:10px">
+            ${item.kuitansiUrl ? `<a href="${item.kuitansiUrl}" target="_blank"><img src="${item.kuitansiUrl}" class="receipt-thumb" onerror="this.style.display='none'"></a>` : ""}
+            <div>
+              <div style="font-weight:700;font-size:13px">${escapeHtml(item.agen || "-")}</div>
+              <div style="font-size:11px;color:#6C757D">${escapeHtml(item.periode)} · ${formatRupiah(item.jumlah)}</div>
+              ${item.kuitansiUrl ? `<a href="${item.kuitansiUrl}" target="_blank" style="font-size:11px;color:#1D3557">📎 Lihat kuitansi</a>` : ""}
+            </div>
+          </div>
+          <span class="status-badge ${cls}">${label}</span>
+        </div>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<div class="empty">Gagal memuat data: ' + err.message + '</div>';
+  }
+}
+
+// ---------- UNDUH REKAP CEKLIST BULANAN ----------
+const BULAN_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+document.getElementById("rekapBulan").value = new Date().toISOString().slice(0, 7);
+document.getElementById("unduhCsvBtn").addEventListener("click", () => unduhRekap("csv"));
+document.getElementById("unduhPdfBtn").addEventListener("click", () => unduhRekap("pdf"));
+
+async function ambilDataRekap(bulanStr) {
+  // bulanStr format: "YYYY-MM"
+  const q = query(collection(db, "ceklist"), orderBy("tanggal", "asc"));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map(d => d.data())
+    .filter(item => item.tanggal && item.tanggal.startsWith(bulanStr));
+}
+
+async function unduhRekap(format) {
+  if (!pastikanFirebaseSiap()) return;
+  const bulanStr = document.getElementById("rekapBulan").value;
+  if (!bulanStr) { showToast("Pilih bulan terlebih dahulu"); return; }
+
+  showToast("Menyiapkan rekap...");
+
+  try {
+    const items = await ambilDataRekap(bulanStr);
+    const [tahun, bulanNum] = bulanStr.split("-");
+    const namaBulan = `${BULAN_ID[Number(bulanNum) - 1]} ${tahun}`;
+
+    if (items.length === 0) {
+      showToast("Tidak ada data ceklist pada bulan ini");
+      return;
+    }
+
+    // Urutkan berdasarkan tanggal lalu nama media
+    items.sort((a, b) => a.tanggal.localeCompare(b.tanggal) || a.mediaNama.localeCompare(b.mediaNama));
+
+    if (format === "csv") {
+      unduhCSV(items, namaBulan, bulanStr);
+    } else {
+      unduhPDF(items, namaBulan);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Gagal membuat rekap: " + err.message);
+  }
+}
+
+function unduhCSV(items, namaBulan, bulanStr) {
+  const statusTeks = {
+    diterima: "Diterima", terlambat: "Terlambat", hilang: "Hilang", tidak_terbit: "Tidak Terbit"
+  };
+  const header = ["Tanggal", "Media", "Status", "Catatan"];
+  const rows = items.map(it => [
+    it.tanggal,
+    it.mediaNama,
+    statusTeks[it.status] || it.status,
+    (it.catatan || "").replace(/"/g, '""')
+  ]);
+
+  let csv = header.join(",") + "\n";
+  rows.forEach(r => {
+    csv += r.map(cell => `"${cell}"`).join(",") + "\n";
+  });
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Rekap-Ceklist-${bulanStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("CSV berhasil diunduh ✓");
+}
+
+function unduhPDF(items, namaBulan) {
+  const statusTeks = {
+    diterima: "Diterima", terlambat: "Terlambat", hilang: "Hilang", tidak_terbit: "Tidak Terbit"
+  };
+
+  // Ringkasan per media
+  const ringkasan = {};
+  items.forEach(it => {
+    if (!ringkasan[it.mediaNama]) ringkasan[it.mediaNama] = { diterima: 0, terlambat: 0, hilang: 0, tidak_terbit: 0 };
+    ringkasan[it.mediaNama][it.status] = (ringkasan[it.mediaNama][it.status] || 0) + 1;
+  });
+
+  const ringkasanRows = Object.entries(ringkasan).map(([media, s]) => `
+    <tr>
+      <td>${media}</td>
+      <td style="text-align:center;color:#52B788;font-weight:700">${s.diterima || 0}</td>
+      <td style="text-align:center;color:#FFB703;font-weight:700">${s.terlambat || 0}</td>
+      <td style="text-align:center;color:#E63946;font-weight:700">${s.hilang || 0}</td>
+      <td style="text-align:center;color:#ADB5BD">${s.tidak_terbit || 0}</td>
+    </tr>
+  `).join("");
+
+  const detailRows = items.map(it => `
+    <tr>
+      <td>${it.tanggal}</td>
+      <td>${it.mediaNama}</td>
+      <td>${statusTeks[it.status] || it.status}</td>
+      <td>${escapeHtml(it.catatan || "-")}</td>
+    </tr>
+  `).join("");
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html><head><meta charset="UTF-8">
+    <title>Rekap Ceklist ${namaBulan}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 30px; color: #333; }
+      h1 { color: #1D3557; font-size: 20px; margin-bottom: 4px; }
+      p.sub { color: #6C757D; font-size: 12px; margin-bottom: 20px; }
+      h2 { color: #2D6A4F; font-size: 14px; margin: 24px 0 8px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+      th { background: #1D3557; color: white; padding: 6px 8px; text-align: left; }
+      td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+      tr:nth-child(even) { background: #f8f9fa; }
+      @media print { body { padding: 10px; } }
+    </style>
+    </head><body>
+      <h1>📰 SiMajalah — Rekap Ceklist Bulanan</h1>
+      <p class="sub">Periode: ${namaBulan}</p>
+
+      <h2>Ringkasan per Media</h2>
+      <table>
+        <tr><th>Media</th><th style="text-align:center">Diterima</th><th style="text-align:center">Terlambat</th><th style="text-align:center">Hilang</th><th style="text-align:center">Tidak Terbit</th></tr>
+        ${ringkasanRows}
+      </table>
+
+      <h2>Detail Harian</h2>
+      <table>
+        <tr><th>Tanggal</th><th>Media</th><th>Status</th><th>Catatan</th></tr>
+        ${detailRows}
+      </table>
+    </body></html>
+  `;
+
+  const win = window.open("", "_blank");
+  win.document.write(htmlContent);
+  win.document.close();
+  win.onload = () => {
+    win.focus();
+    win.print();
+  };
+  showToast("Membuka jendela cetak PDF...");
+}
+
+// Mulai aplikasi: cek apakah sudah login
+checkSession();
+</script>
+
+</body>
+</html>
