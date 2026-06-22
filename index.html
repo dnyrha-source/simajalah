@@ -633,7 +633,8 @@ async function loadCeklist() {
   return `
     <div class="media-item">
       <div>
-        <div style="font-weight:600;font-size:13px">${item.tanggal}</div>
+        <div style="font-weight:600;font-size:13px">${item.mediaNama}</div>
+        <div style="font-size:11px;color:#6C757D">${item.tanggal}</div>
         ${item.catatan ? `<div style="font-size:11px;color:#6C757D">📝 ${escapeHtml(item.catatan)}</div>` : ""}
       </div>
       <div style="display:flex;align-items:center;gap:8px">
