@@ -986,7 +986,7 @@ window.cetakKuitansi = function(agen, periode, jumlah) {
   .tanggal { text-align: right; margin-bottom: 6px; font-size: 13px; }
   @media print {
     body { padding: 20px 30px; }
-    @page { size: A5 landscape; margin: 15mm; }
+    @page { size: A5 portrait; margin: 15mm; }
   }
 </style>
 </head>
@@ -1025,13 +1025,13 @@ window.cetakKuitansi = function(agen, periode, jumlah) {
     <span class="kotak-angka">${jumlahAngka.toLocaleString("id-ID")}</span>
   </div>
 
-  <div class="tanggal">${tanggalCetak}</div>
   <div class="ttd">
     <div class="ttd-blok">
       <div class="jabatan">Mengetahui,<br>Kasubag Perlengkapan &amp; Rumah Tangga</div>
       <span class="nama">Maryati, SE</span>
     </div>
-    <div class="ttd-blok" style="text-align:right">
+    <div class="ttd-blok" style="text-align:left">
+      <div style="margin-bottom:4px">${tanggalCetak}</div>
       <div class="jabatan">Ka Perpustakaan Labschool Jakarta</div>
       <span class="nama">Deni Ramdeni, A.Md</span>
     </div>
